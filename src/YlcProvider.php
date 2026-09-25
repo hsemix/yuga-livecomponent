@@ -23,12 +23,15 @@ class YlcProvider extends ServiceProvider
      */
     public function load(Application $app)
     {
+        $this->mergeConfigFrom(__DIR__ . '/../config/ylc.php', 'ylc');
+
         return $app;
     }
 
     public function boot(Route $router)
     {
         $this->publishes([
+            __DIR__ . '/../config/ylc.php' => path('config/ylc.php'),
             __DIR__ . '/../public/plugins/ylc-live-plugin.js' => path('public/plugins/ylc-live-plugin.js'),
         ], 'ylc-assets');
 
