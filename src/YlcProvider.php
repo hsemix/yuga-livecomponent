@@ -26,11 +26,8 @@ class YlcProvider extends ServiceProvider
     {
         $view = $app->make('view');
 
-        $ylcCompiler = new YlcCompiler();
-
-        $view->extension(
-            fn ($value, $compiler) =>
-                $ylcCompiler->compile($value, $compiler)
+        $view->compiler()->extend(
+            [new YlcCompiler(), 'compile']
         );
         return $app;
     }
