@@ -49,7 +49,7 @@ Add a `ylc` configuration entry to the Yuga application's configuration. Each di
 return [
     'discovery' => [
         [
-            'path' => base_path('app/Live'),
+            'path' => path('app/Live'),
             'namespace' => 'App\\Live',
             'prefix' => null,
         ],
@@ -62,19 +62,19 @@ return [
 ];
 ```
 
-Components are named from their class path. For example, `App\\Live\\Shopping\\Cart` becomes `shopping.cart`. Set `#[Live(name: 'cart')]` to choose an explicit name.
+Components are named from their class path. For example, `App\Live\Shopping\Cart` becomes `shopping.cart`. Set `#[Live(name: 'cart')]` to choose an explicit name.
 
 ## Creating a component
 
-Create a class that extends `Yuga\\Live\\Component`:
+Create a class that extends `Yuga\Live\Component`:
 
 ```php
 <?php
 
 namespace App\\Live;
 
-use Yuga\\Live\\Attributes\\Live;
-use Yuga\\Live\\Component;
+use Yuga\Live\Attributes\Live;
+use Yuga\Live\Component;
 
 #[Live(name: 'counter')]
 class Counter extends Component
@@ -175,7 +175,7 @@ Action parameters use JavaScript expressions inside the attribute, for example `
 Typed public properties extending `Form` are initialized automatically. Define the form fields and validation rules in a form class:
 
 ```php
-use Yuga\\Live\\Form;
+use Yuga\Live\Form;
 
 class ProfileForm extends Form
 {
@@ -219,7 +219,7 @@ public function save(): void
 Mark a public property with `#[Url]` to synchronize it with the query string:
 
 ```php
-use Yuga\\Live\\Attributes\\Url;
+use Yuga\Live\Attributes\Url;
 
 #[Url(as: 'q')]
 public string $search = '';
@@ -235,7 +235,7 @@ Array properties are JSON-encoded in the query string. URL-backed state is resto
 Computed properties are exposed through a `get<Name>Property()` method:
 
 ```php
-use Yuga\\Live\\Attributes\\Computed;
+use Yuga\Live\Attributes\Computed;
 
 #[Computed]
 public function getTotalProperty(): int
