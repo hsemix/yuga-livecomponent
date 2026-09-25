@@ -3,6 +3,7 @@
 namespace Yuga\Live;
 
 use Yuga\Interfaces\Application\Application;
+use Yuga\Live\Compilers\YlcCompiler;
 use Yuga\Live\Controllers\LiveController;
 use Yuga\Live\Controllers\LiveStreamController;
 use Yuga\Live\Controllers\LiveUploadController;
@@ -23,6 +24,14 @@ class YlcProvider extends ServiceProvider
      */
     public function load(Application $app)
     {
+        $view = $app->make('view');
+
+        $ylcCompiler = new YlcCompiler();
+
+        $view->extension(
+            fn ($value, $compiler) =>
+                $ylcCompiler->compile($value, $compiler)
+        );
         return $app;
     }
 
