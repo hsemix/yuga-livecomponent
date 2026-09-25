@@ -2,24 +2,20 @@
 
 namespace Yuga\Live\Compilers;
 
-use Yuga\Views\HaxCompiler;
+use InvalidArgumentException;
+use Yuga\Views\Compilers\Compiler;
 
 class YlcCompiler
 {
-    public function compile(string $value, HaxCompiler $compiler): string
-    {
-        return $this->compileMounts($value, $compiler);
-    }
-
-    protected function compileMounts(
+    public function compile(
         string $value,
-        HaxCompiler $compiler
+        Compiler $compiler
     ): string {
         return preg_replace_callback(
-            '/<ylc:mount\s+([^>]*?)\/>/s',
+            '/<ylc:mount\s*(?<attributes>[^>]*)\/>/',
             function ($matches) use ($compiler) {
                 return $this->compileMount(
-                    $matches[1],
+                    $matches['attributes'] ?? '',
                     $compiler
                 );
             },
@@ -29,117 +25,62 @@ class YlcCompiler
 
     protected function compileMount(
         string $attributes,
-        HaxCompiler $compiler
+        Compiler $compiler
     ): string {
-        $parsed = $this->parseAttributes($attributes);
+        $attributes = $compiler->parseAttributes($attributes);
 
-        if (!isset($parsed['component'])) {
-            throw new \InvalidArgumentException(
-                '<ylc:mount> requires a "component" attribute.'
-            );
-        }
-
-        $component = $parsed['component'];
-        unset($parsed['component']);
-
-        $optionNames = [
-            'lazy',
-            'stream',
-            'poll',
-            'stream-always',
-        ];
-
+        $component = null;
         $props = [];
         $options = [];
 
-        foreach ($parsed as $name => $value) {
-            if (str_starts_with($name, 'ylc:')) {
-                $option = substr($name, 4);
+        foreach ($attributes as $attribute) {
+            $name = $attribute['name'];
 
-                $options[$option] = $value;
+            if ($name === 'component') {
+                $component = $attribute;
+                continue;
+            }
+
+            if (str_starts_with($name, 'ylc:')) {
+                $attribute['name'] = substr($name, 4);
+
+                $options[] = $attribute;
 
                 continue;
             }
 
-            $props[$name] = $value;
+            $props[] = $attribute;
         }
+
+        if ($component === null) {
+            throw new InvalidArgumentException(
+                '<ylc:mount> requires a component attribute.'
+            );
+        }
+
+        $componentExpression = $this->compileValue($component);
+
+        $propsExpression = $compiler->compileAttributes($props);
+
+        $optionsExpression = $compiler->compileAttributes($options);
 
         return sprintf(
             '<?php echo ylc(%s, %s, %s); ?>',
-            $component,
-            $this->compileArray($props),
-            $this->compileArray($options)
+            $componentExpression,
+            $propsExpression,
+            $optionsExpression
         );
     }
 
-    protected function parseAttributes(string $attributes): array
+    protected function compileValue(array $attribute): string
     {
-        $result = [];
+        if ($attribute['bound']) {
+            return (string) $attribute['value'];
+        }
 
-        $pattern = '/
-        (?<bound>:)?                         # optional :
-        (?<name>[\w:-]+)                    # attribute name
-        (?:
-            \s*=\s*
-            (?:
-                "(?<double>[^"]*)"           # "value"
-                |
-                \'(?<single>[^\']*)\'        # \'value\'
-            )
-        )?
-    /x';
-
-        preg_match_all(
-            $pattern,
-            $attributes,
-            $matches,
-            PREG_SET_ORDER
+        return var_export(
+            $attribute['value'],
+            true
         );
-
-        foreach ($matches as $match) {
-            $name = $match['name'];
-
-            $hasValue =
-                ($match['double'] ?? '') !== '' ||
-                ($match['single'] ?? '') !== '' ||
-                str_contains($match[0], '=');
-
-            if (!$hasValue) {
-                // <ylc:mount ... lazy />
-                $result[$name] = 'true';
-                continue;
-            }
-
-            $value = $match['double'] !== ''
-                ? $match['double']
-                : $match['single'];
-
-            if (($match['bound'] ?? '') === ':') {
-                // :user="$user"
-                // :limit="20"
-                // :enabled="true"
-                $result[$name] = $value;
-            } else {
-                // component="profile"
-                $result[$name] = var_export($value, true);
-            }
-        }
-
-        return $result;
-    }
-
-    protected function compileArray(array $values): string
-    {
-        if (empty($values)) {
-            return '[]';
-        }
-
-        $items = [];
-
-        foreach ($values as $key => $value) {
-            $items[] = var_export($key, true) . ' => ' . $value;
-        }
-
-        return '[' . implode(', ', $items) . ']';
     }
 }
