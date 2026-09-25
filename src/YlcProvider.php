@@ -23,8 +23,6 @@ class YlcProvider extends ServiceProvider
      */
     public function load(Application $app)
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/ylc.php', 'ylc');
-
         return $app;
     }
 
